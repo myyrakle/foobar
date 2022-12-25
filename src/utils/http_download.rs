@@ -2,8 +2,9 @@ use std::path::PathBuf;
 
 use reqwest::header;
 use reqwest::ClientBuilder;
+use reqwest::StatusCode;
 
-pub async fn download(url: String, store_path: PathBuf) {
+pub async fn download(url: String, store_path: PathBuf) -> StatusCode {
     let mut headers = header::HeaderMap::new();
 
     headers.insert("Accept", header::HeaderValue::from_static(r#"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"#));
@@ -40,12 +41,16 @@ pub async fn download(url: String, store_path: PathBuf) {
         .unwrap();
 
     if let Ok(data) = client.get(url).send().await {
-        println!("foo: {:?}", data);
-        println!("bar: {:?}", data.content_length());
+        let status = data.status().clone();
+
         if let Ok(data) = data.bytes().await {
             if let Err(error) = tokio::fs::write(store_path, data).await {
                 println!("error{:?}", error);
             }
         }
+
+        return status;
+    } else {
+        return StatusCode::INTERNAL_SERVER_ERROR;
     }
 }
