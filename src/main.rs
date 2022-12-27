@@ -10,8 +10,12 @@ use utils::get_input;
 async fn main() {
     let host = "http://viewer.nl.go.kr:8080/nlmivs/view_image.jsp";
 
+    // https://viewer.nl.go.kr/nlmivs/viewWonmun_js.jsp?cno=CNTS-00047689282
+
     println!("cno가 뭐죠?:");
     let cno = get_input();
+
+    let headers = utils::get_headers(cno.clone()).await;
 
     println!("시작 페이지:");
     let start_page: i32 = get_input().parse().expect("유효한 숫자가 아닙니다.");
@@ -36,6 +40,7 @@ async fn main() {
 
         let status = utils::download(
             format!("{}?cno={}&vol=1&page={}&twoThreeYn=N", host, cno, page).into(),
+            headers.clone(),
             file_path.clone(),
         )
         .await;
