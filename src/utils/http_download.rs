@@ -15,7 +15,7 @@ pub async fn download(url: String, headers: header::HeaderMap, store_path: PathB
 
         if let Ok(data) = data.bytes().await {
             if let Err(error) = tokio::fs::write(store_path, data).await {
-                println!("error{:?}", error);
+                println!("error: {:?}", error);
             }
         }
 

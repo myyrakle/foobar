@@ -10,8 +10,6 @@ use utils::get_input;
 async fn main() {
     let host = "http://viewer.nl.go.kr/nlmivs/view_image.jsp";
 
-    // https://viewer.nl.go.kr/nlmivs/viewWonmun_js.jsp?cno=CNTS-00047689282
-
     println!("cno가 뭐죠?:");
     let cno = get_input();
 

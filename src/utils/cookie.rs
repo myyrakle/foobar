@@ -75,8 +75,6 @@ pub async fn get_jsesson_id(cno: String) -> String {
         .await
         .expect("쿠기 가져오기 실패!! 사이트에 문제가 있습니다.");
 
-    println!("response: {:?}", response);
-
     let jsession_id = response
         .headers()
         .into_iter()
@@ -111,14 +109,10 @@ pub async fn get_jsesson_id(cno: String) -> String {
         .unwrap()
         .to_owned();
 
-    println!("JSESSION_ID: [{}]", jsession_id);
-    println!("wmonid: [{}]", wmonid);
-
-    println!("bar: {:?}", response.text().await.unwrap());
-
     let jsession = format!("{}; {}", jsession_id, wmonid);
 
-    register_jsession(cno, jsession.clone()).await;
+    register_jsession(cno.clone(), jsession.clone()).await;
+    register_jsession2(cno, jsession.clone()).await;
 
     jsession
 }
@@ -214,9 +208,105 @@ pub async fn register_jsession(cno: String, cookie: String) {
         .build()
         .unwrap();
 
-    // KOL000022759
+    let response = client
+        .post("https://viewer.nl.go.kr/main.wviewer")
+        .body(request_body)
+        .send()
+        .await
+        .expect("jsession 설정 실패");
 
-    println!("request_body: {}", request_body);
+    if response.status() != StatusCode::OK {
+        panic!("jsession 설정 실패: {}", response.status());
+    }
+}
+
+pub async fn register_jsession2(cno: String, cookie: String) {
+    let mut headers = header::HeaderMap::new();
+
+    let referal_url = "https://viewer.nl.go.kr/main.wviewer".to_owned();
+
+    headers.insert("Accept", header::HeaderValue::from_static(r#"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"#));
+    headers.insert(
+        "Accept-Encoding",
+        header::HeaderValue::from_static(r#"gzip, deflate, br"#),
+    );
+    headers.insert(
+        "Accept-Language",
+        header::HeaderValue::from_static(r#"ko-KR,ko;q=0.9"#),
+    );
+    headers.insert(
+        "Connection",
+        header::HeaderValue::from_static(r#"keep-alive"#),
+    );
+    headers.insert(
+        "Content-Type",
+        header::HeaderValue::from_static(r#"application/x-www-form-urlencoded"#),
+    );
+    headers.insert(
+        "Cookie",
+        header::HeaderValue::from_str(cookie.as_str()).unwrap(),
+    );
+    headers.insert(
+        "Host",
+        header::HeaderValue::from_static(r#"viewer.nl.go.kr"#),
+    );
+    headers.insert(
+        "Origin",
+        header::HeaderValue::from_static(r#"https://viewer.nl.go.kr"#),
+    );
+    headers.insert(
+        "Referer",
+        header::HeaderValue::from_str(referal_url.as_str()).expect("invalid referal url"),
+    );
+    headers.insert(
+        "sec-ch-ua",
+        header::HeaderValue::from_static(
+            r#""Not?A_Brand";v="8", "Chromium";v="108", "Google Chrome";v="108""#,
+        ),
+    );
+    headers.insert(
+        "sec-ch-ua-mobile",
+        header::HeaderValue::from_static(r#"?0"#),
+    );
+    headers.insert(
+        "sec-ch-ua-platform",
+        header::HeaderValue::from_static(r#""Windows""#),
+    );
+    headers.insert(
+        "Sec-Fetch-Dest",
+        header::HeaderValue::from_static(r#"document"#),
+    );
+    headers.insert(
+        "Sec-Fetch-Mode",
+        header::HeaderValue::from_static(r#"navigate"#),
+    );
+    headers.insert(
+        "Sec-Fetch-Site",
+        header::HeaderValue::from_static(r#"same-origin"#),
+    );
+    headers.insert(
+        "Upgrade-Insecure-Requests",
+        header::HeaderValue::from_static(r#"1"#),
+    );
+    headers.insert("User-Agent", header::HeaderValue::from_static(r#"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36"#));
+
+    let request_body = format!(
+        r#"cno={}&vol=&page=&uid=&ugrp=&curVol=&curPage=&keyword=&ax=Y&mac=D45D64EF5866&lip=192.168.1.2&sip=49.142.71.68&card_class=&sysid=&viewType=&lang=&audiono="#,
+        cno
+    );
+
+    let content_length = request_body.len().to_string();
+
+    headers.insert(
+        "Content-Length",
+        header::HeaderValue::from_str(content_length.as_str()).expect(""),
+    );
+
+    let client = ClientBuilder::new()
+        .default_headers(headers)
+        .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36")
+        .build()
+        .unwrap();
 
     let response = client
         .post("https://viewer.nl.go.kr/main.wviewer")
@@ -225,11 +315,9 @@ pub async fn register_jsession(cno: String, cookie: String) {
         .await
         .expect("jsession 설정 실패");
 
-    println!("foo: {:?}", response.text().await.unwrap());
-
-    // if response.status() != StatusCode::OK {
-    //     panic!("jsession 설정 실패: {}", response.status());
-    // }
+    if response.status() != StatusCode::OK {
+        panic!("jsession 2 설정 실패: {}", response.status());
+    }
 }
 
 /*
