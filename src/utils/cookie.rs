@@ -111,9 +111,6 @@ pub async fn get_jsesson_id(cno: String) -> String {
 
     let jsession = format!("{}; {}", jsession_id, wmonid);
 
-    register_jsession(cno.clone(), jsession.clone()).await;
-    register_jsession2(cno, jsession.clone()).await;
-
     jsession
 }
 
@@ -220,7 +217,7 @@ pub async fn register_jsession(cno: String, cookie: String) {
     }
 }
 
-pub async fn register_jsession2(cno: String, cookie: String) {
+pub async fn register_jsession2(cno: String, cookie: String) -> (String, i32) {
     let mut headers = header::HeaderMap::new();
 
     let referal_url = "https://viewer.nl.go.kr/main.wviewer".to_owned();
@@ -318,6 +315,28 @@ pub async fn register_jsession2(cno: String, cookie: String) {
     if response.status() != StatusCode::OK {
         panic!("jsession 2 설정 실패: {}", response.status());
     }
+
+    let text = response.text().await.unwrap();
+
+    let lines: Vec<_> = text.split("\n").collect();
+
+    let title = lines
+        .iter()
+        .find(|e| e.trim().starts_with("var metaTitleString = "))
+        .map(|e| e.split("\"").nth(1).map(|e| e.to_owned()))
+        .flatten()
+        .unwrap_or("".to_owned());
+
+    let total_page = lines
+        .iter()
+        .find(|e| e.trim().starts_with("var vol_maxpage = "))
+        .map(|e| e.split("\"").nth(1))
+        .flatten()
+        .map(|e| e.parse::<i32>().ok())
+        .flatten()
+        .expect("전체 페이지 획득 실패");
+
+    (title, total_page)
 }
 
 /*
@@ -332,10 +351,8 @@ pub async fn register_jsession2(cno: String, cookie: String) {
 // https://viewer.nl.go.kr/main.wviewer
 // CNTS-00047689282
 
-pub async fn get_headers(cno: String) -> header::HeaderMap {
+pub async fn get_headers(jsession_id: String) -> header::HeaderMap {
     let mut headers = header::HeaderMap::new();
-
-    let jsession_id = get_jsesson_id(cno).await;
 
     let cookie = format!(r#"{}"#, jsession_id);
 
